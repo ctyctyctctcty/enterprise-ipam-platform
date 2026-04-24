@@ -1,0 +1,898 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<div class="col-12">
+  <style>
+    .ops-shell {
+      width: min(100%, 1480px);
+      margin: 0 auto;
+      padding: 8px 6px 28px;
+    }
+
+    .ops-hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      padding: 20px 22px;
+      margin-bottom: 18px;
+      background: linear-gradient(135deg, #ffffff 0%, #f7fbff 100%);
+      border: 1px solid #d9e5f2;
+      border-radius: 18px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .ops-hero-title {
+      margin: 0 0 6px;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.15;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .ops-hero-subtitle {
+      margin: 0;
+      max-width: 760px;
+      color: #5b6b7f;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .ops-hero-stamp {
+      flex: 0 0 auto;
+      min-width: 220px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: #f8fbff;
+      border: 1px solid #d6e6fb;
+    }
+
+    .ops-hero-stamp-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #4b6482;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .ops-hero-stamp-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: #18324d;
+    }
+
+    .ops-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 16px 18px;
+      margin-bottom: 18px;
+      background: #ffffff;
+      border: 1px solid #dbe3ef;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .ops-toolbar-group {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .ops-field {
+      min-width: 220px;
+    }
+
+    .ops-field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #41556d;
+      letter-spacing: 0.02em;
+    }
+
+    .ops-select,
+    .ops-button,
+    .ops-link-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #c8d5e4;
+      background: #ffffff;
+      color: #18324d;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .ops-select {
+      width: 100%;
+    }
+
+    .ops-button {
+      cursor: pointer;
+      background: #155eef;
+      border-color: #155eef;
+      color: #ffffff;
+    }
+
+    .ops-link-button:hover,
+    .ops-select:hover {
+      border-color: #9fb6cf;
+      background: #f8fbff;
+    }
+
+    .ops-button:hover {
+      background: #0f4fd0;
+      border-color: #0f4fd0;
+    }
+
+    .ops-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .ops-kpi-card {
+      padding: 14px 16px 16px;
+      background: #ffffff;
+      border: 1px solid #dbe3ef;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .ops-kpi-label {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: #607286;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.35;
+    }
+
+    .ops-kpi-value {
+      margin-top: 8px;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1;
+      color: #0f172a;
+    }
+
+    .ops-kpi-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #71859a;
+      line-height: 1.35;
+    }
+
+    .ops-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.95fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .ops-stack {
+      display: grid;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .ops-panel {
+      background: #ffffff;
+      border: 1px solid #dbe3ef;
+      border-radius: 18px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+      overflow: hidden;
+    }
+
+    .ops-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid #ebf1f7;
+    }
+
+    .ops-panel-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    .ops-panel-subtitle {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: #6a7d92;
+      line-height: 1.45;
+    }
+
+    .ops-panel-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f5f9fd;
+      color: #45607f;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .ops-panel-body {
+      padding: 6px 20px 18px;
+    }
+
+    .ops-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 14px;
+    }
+
+    .ops-table th {
+      padding: 12px 10px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #667b91;
+      border-bottom: 1px solid #e8eef5;
+    }
+
+    .ops-table td {
+      padding: 12px 10px;
+      color: #22384d;
+      border-bottom: 1px solid #eef3f8;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+
+    .ops-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .ops-muted {
+      color: #71859a;
+      font-size: 12px;
+    }
+
+    .ops-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+
+    .ops-badge-neutral {
+      background: #eef4fb;
+      color: #4d6784;
+    }
+
+    .ops-badge-warning {
+      background: #fff5d8;
+      color: #a16207;
+    }
+
+    .ops-badge-high {
+      background: #ffe6da;
+      color: #c2410c;
+    }
+
+    .ops-badge-critical {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .ops-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .ops-list-block {
+      padding: 14px 14px 12px;
+      border: 1px solid #e7edf4;
+      border-radius: 14px;
+      background: #fbfdff;
+    }
+
+    .ops-list-block-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #18324d;
+    }
+
+    .ops-list-items {
+      display: grid;
+      gap: 8px;
+    }
+
+    .ops-list-item {
+      padding-top: 8px;
+      border-top: 1px solid #edf2f7;
+      font-size: 13px;
+      color: #294259;
+      line-height: 1.45;
+    }
+
+    .ops-list-item:first-child {
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .ops-empty {
+      padding: 10px 0 2px;
+      color: #7b8da1;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .ops-sidebar {
+      position: sticky;
+      top: 18px;
+    }
+
+    @media (max-width: 1440px) {
+      .ops-kpi-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 1180px) {
+      .ops-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .ops-sidebar {
+        position: static;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .ops-hero {
+        flex-direction: column;
+      }
+
+      .ops-hero-stamp {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .ops-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .ops-shell {
+        padding-inline: 0;
+      }
+
+      .ops-toolbar {
+        align-items: stretch;
+      }
+
+      .ops-toolbar-group,
+      .ops-field {
+        width: 100%;
+      }
+
+      .ops-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .ops-panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .ops-table th,
+      .ops-table td {
+        padding-inline: 6px;
+      }
+    }
+  </style>
+
+  <div class="ops-shell">
+    <section class="ops-hero">
+      <div>
+        <h1 class="ops-hero-title" data-ops-i18n="title">Operations Dashboard</h1>
+        <p class="ops-hero-subtitle" data-ops-i18n="subtitle">
+          Operational summary for IP capacity, request review pressure, import health, and source traceability.
+        </p>
+      </div>
+      <div class="ops-hero-stamp">
+        <span class="ops-hero-stamp-label" data-ops-i18n="dataRefreshed">Data Refreshed</span>
+        <div class="ops-hero-stamp-value" id="ops-last-refreshed">-</div>
+      </div>
+    </section>
+
+    <section class="ops-toolbar">
+      <div class="ops-toolbar-group">
+        <div class="ops-field">
+          <label for="site-filter" data-ops-i18n="siteFilter">Site Filter</label>
+          <select id="site-filter" class="ops-select">
+            <option value="" data-ops-i18n="allSites">All Sites</option>
+          </select>
+        </div>
+      </div>
+      <div class="ops-toolbar-group">
+        <button id="refresh-dashboard" type="button" class="ops-button" data-ops-i18n="refreshSummary">Refresh Summary</button>
+        <a href="/dashboard" class="ops-link-button" data-ops-i18n="openFullDashboard">Open Full Dashboard</a>
+        <a href="/topology" class="ops-link-button" data-ops-i18n="openTopology">Open Topology</a>
+      </div>
+    </section>
+
+    <section class="ops-kpi-grid">
+      <article class="ops-kpi-card">
+        <p class="ops-kpi-label" data-ops-i18n="kpiTotalIps">Total IPs</p>
+        <div class="ops-kpi-value" id="kpi-total-ips">-</div>
+        <div class="ops-kpi-note" data-ops-i18n="kpiTotalIpsNote">Current inventory records tracked by the platform.</div>
+      </article>
+      <article class="ops-kpi-card">
+        <p class="ops-kpi-label" data-ops-i18n="kpiAllocated">Allocated Fixed IPs</p>
+        <div class="ops-kpi-value" id="kpi-allocated">-</div>
+        <div class="ops-kpi-note" data-ops-i18n="kpiAllocatedNote">Confirmed and unverified assigned addresses.</div>
+      </article>
+      <article class="ops-kpi-card">
+        <p class="ops-kpi-label" data-ops-i18n="kpiCandidates">Available Candidates</p>
+        <div class="ops-kpi-value" id="kpi-candidate">-</div>
+        <div class="ops-kpi-note" data-ops-i18n="kpiCandidatesNote">Potentially assignable IPs with no hard block.</div>
+      </article>
+      <article class="ops-kpi-card">
+        <p class="ops-kpi-label" data-ops-i18n="kpiConflicts">Conflict Suspected</p>
+        <div class="ops-kpi-value" id="kpi-conflict">-</div>
+        <div class="ops-kpi-note" data-ops-i18n="kpiConflictsNote">Addresses that need operator validation.</div>
+      </article>
+      <article class="ops-kpi-card">
+        <p class="ops-kpi-label" data-ops-i18n="kpiReview">Review Needed Requests</p>
+        <div class="ops-kpi-value" id="kpi-review">-</div>
+        <div class="ops-kpi-note" data-ops-i18n="kpiReviewNote">Requests waiting on manual risk review.</div>
+      </article>
+      <article class="ops-kpi-card">
+        <p class="ops-kpi-label" data-ops-i18n="kpiImports">Failed Import Jobs</p>
+        <div class="ops-kpi-value" id="kpi-import-failed">-</div>
+        <div class="ops-kpi-note" data-ops-i18n="kpiImportsNote">Import executions that require follow-up.</div>
+      </article>
+    </section>
+
+    <section class="ops-layout">
+      <div class="ops-stack">
+        <article class="ops-panel">
+          <header class="ops-panel-header">
+            <div>
+              <h2 class="ops-panel-title" data-ops-i18n="fixedIpTitle">Fixed IP Capacity Alerts</h2>
+              <p class="ops-panel-subtitle" data-ops-i18n="fixedIpSubtitle">Subnets crossing warning, high, or critical fixed-IP utilization thresholds.</p>
+            </div>
+            <span class="ops-panel-meta" id="fixed-ip-count">0</span>
+          </header>
+          <div class="ops-panel-body" id="fixed-ip-alerts"></div>
+        </article>
+
+        <article class="ops-panel">
+          <header class="ops-panel-header">
+            <div>
+              <h2 class="ops-panel-title" data-ops-i18n="dhcpTitle">DHCP Scope Alerts</h2>
+              <p class="ops-panel-subtitle" data-ops-i18n="dhcpSubtitle">Observed DHCP pool pressure based on current scope occupancy.</p>
+            </div>
+            <span class="ops-panel-meta" id="dhcp-count">0</span>
+          </header>
+          <div class="ops-panel-body" id="dhcp-alerts"></div>
+        </article>
+
+        <article class="ops-panel">
+          <header class="ops-panel-header">
+            <div>
+              <h2 class="ops-panel-title" data-ops-i18n="recentTitle">Recent Activity</h2>
+              <p class="ops-panel-subtitle" data-ops-i18n="recentSubtitle">Latest request, audit, and import events affecting operations.</p>
+            </div>
+          </header>
+          <div class="ops-panel-body" id="recent-activity"></div>
+        </article>
+      </div>
+
+      <div class="ops-stack ops-sidebar">
+        <article class="ops-panel">
+          <header class="ops-panel-header">
+            <div>
+              <h2 class="ops-panel-title" data-ops-i18n="operationalTitle">Operational Alerts</h2>
+              <p class="ops-panel-subtitle" data-ops-i18n="operationalSubtitle">Issues that typically need operator attention before assignment or reconciliation.</p>
+            </div>
+          </header>
+          <div class="ops-panel-body" id="operational-alerts"></div>
+        </article>
+
+        <article class="ops-panel">
+          <header class="ops-panel-header">
+            <div>
+              <h2 class="ops-panel-title" data-ops-i18n="siteSummaryTitle">Site Summary</h2>
+              <p class="ops-panel-subtitle" data-ops-i18n="siteSummarySubtitle">Quick distribution of subnets, IPs, requests, and conflicts by site.</p>
+            </div>
+          </header>
+          <div class="ops-panel-body" id="site-summary"></div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const OPS_TRANSLATIONS = {
+      en: {
+        title: "Operations Dashboard",
+        subtitle: "Operational summary for IP capacity, request review pressure, import health, and source traceability.",
+        dataRefreshed: "Data Refreshed",
+        siteFilter: "Site Filter",
+        allSites: "All Sites",
+        refreshSummary: "Refresh Summary",
+        openFullDashboard: "Open Full Dashboard",
+        openTopology: "Open Topology",
+        kpiTotalIps: "Total IPs",
+        kpiTotalIpsNote: "Current inventory records tracked by the platform.",
+        kpiAllocated: "Allocated Fixed IPs",
+        kpiAllocatedNote: "Confirmed and unverified assigned addresses.",
+        kpiCandidates: "Available Candidates",
+        kpiCandidatesNote: "Potentially assignable IPs with no hard block.",
+        kpiConflicts: "Conflict Suspected",
+        kpiConflictsNote: "Addresses that need operator validation.",
+        kpiReview: "Review Needed Requests",
+        kpiReviewNote: "Requests waiting on manual risk review.",
+        kpiImports: "Failed Import Jobs",
+        kpiImportsNote: "Import executions that require follow-up.",
+        fixedIpTitle: "Fixed IP Capacity Alerts",
+        fixedIpSubtitle: "Subnets crossing warning, high, or critical fixed-IP utilization thresholds.",
+        dhcpTitle: "DHCP Scope Alerts",
+        dhcpSubtitle: "Observed DHCP pool pressure based on current scope occupancy.",
+        recentTitle: "Recent Activity",
+        recentSubtitle: "Latest request, audit, and import events affecting operations.",
+        operationalTitle: "Operational Alerts",
+        operationalSubtitle: "Issues that typically need operator attention before assignment or reconciliation.",
+        siteSummaryTitle: "Site Summary",
+        siteSummarySubtitle: "Quick distribution of subnets, IPs, requests, and conflicts by site.",
+        tableSubnet: "Subnet",
+        tableSite: "Site",
+        tableUsage: "Usage",
+        tableLevel: "Level",
+        tableScope: "Scope",
+        tableRange: "Range",
+        tableArea: "Area",
+        tableLatestItems: "Latest Items",
+        tableAlertType: "Alert Type",
+        tableItems: "Items",
+        tableSubnets: "Subnets",
+        tableIps: "IPs",
+        tableRequests: "Requests",
+        tableConflicts: "Conflicts",
+        requests: "Requests",
+        auditLogs: "Audit Logs",
+        importJobs: "Import Jobs",
+        conflictIps: "Conflict Suspected IPs",
+        reviewNeeded: "Requests Needing Manual Review",
+        failedImports: "Failed or Incomplete Import Jobs",
+        weakTraceability: "Weak Ownership Traceability",
+        noItems: "No items.",
+        noFixedAlerts: "No subnets are above the fixed-IP capacity threshold.",
+        noDhcpAlerts: "No DHCP scopes are above the alert threshold.",
+        noSiteSummary: "No site summary is available yet."
+      },
+      ja: {
+        title: "運用ダッシュボード",
+        subtitle: "IP 容量、申請レビュー負荷、取込状況、ソース追跡性をまとめて確認する運用サマリーです。",
+        dataRefreshed: "データ更新時刻",
+        siteFilter: "拠点フィルター",
+        allSites: "全拠点",
+        refreshSummary: "サマリー更新",
+        openFullDashboard: "フルダッシュボード",
+        openTopology: "トポロジー",
+        kpiTotalIps: "総 IP 数",
+        kpiTotalIpsNote: "プラットフォームで管理中の IP 在庫件数です。",
+        kpiAllocated: "割当済み固定 IP",
+        kpiAllocatedNote: "確認済みと未確認の割当済みアドレスです。",
+        kpiCandidates: "候補 IP",
+        kpiCandidatesNote: "明確なブロック要因がない候補アドレスです。",
+        kpiConflicts: "競合疑い",
+        kpiConflictsNote: "担当者による確認が必要なアドレスです。",
+        kpiReview: "要レビュー申請",
+        kpiReviewNote: "手動レビュー待ちの申請件数です。",
+        kpiImports: "失敗した取込",
+        kpiImportsNote: "運用フォローが必要な取込ジョブです。",
+        fixedIpTitle: "固定 IP 容量アラート",
+        fixedIpSubtitle: "固定 IP 利用率が warning / high / critical を超えたサブネットです。",
+        dhcpTitle: "DHCP スコープアラート",
+        dhcpSubtitle: "現在の観測値から見た DHCP プール逼迫状況です。",
+        recentTitle: "最近の活動",
+        recentSubtitle: "申請、監査、取込の最新イベントをまとめて表示します。",
+        operationalTitle: "運用アラート",
+        operationalSubtitle: "割当前や整合確認前に担当者が見るべき論点です。",
+        siteSummaryTitle: "拠点サマリー",
+        siteSummarySubtitle: "拠点ごとのサブネット、IP、申請、競合件数です。",
+        tableSubnet: "サブネット",
+        tableSite: "拠点",
+        tableUsage: "使用量",
+        tableLevel: "レベル",
+        tableScope: "スコープ",
+        tableRange: "範囲",
+        tableArea: "区分",
+        tableLatestItems: "最新項目",
+        tableAlertType: "アラート種別",
+        tableItems: "項目",
+        tableSubnets: "サブネット",
+        tableIps: "IP",
+        tableRequests: "申請",
+        tableConflicts: "競合",
+        requests: "申請",
+        auditLogs: "監査ログ",
+        importJobs: "取込ジョブ",
+        conflictIps: "競合疑い IP",
+        reviewNeeded: "手動レビューが必要な申請",
+        failedImports: "失敗または未完了の取込ジョブ",
+        weakTraceability: "追跡性が弱い IP",
+        noItems: "該当項目はありません。",
+        noFixedAlerts: "固定 IP 容量アラート対象のサブネットはありません。",
+        noDhcpAlerts: "DHCP スコープのアラートはありません。",
+        noSiteSummary: "拠点サマリーはまだありません。"
+      }
+    };
+
+    function getOpsLang() {
+      return localStorage.getItem("enterprise_ipam_admin_lang") || "en";
+    }
+
+    function t(key) {
+      const lang = getOpsLang();
+      return (OPS_TRANSLATIONS[lang] && OPS_TRANSLATIONS[lang][key]) || OPS_TRANSLATIONS.en[key] || key;
+    }
+
+    function applyOpsTranslations() {
+      document.querySelectorAll("[data-ops-i18n]").forEach((element) => {
+        element.textContent = t(element.dataset.opsI18n);
+      });
+      const allSitesOption = document.querySelector('#site-filter option[value=""]');
+      if (allSitesOption) {
+        allSitesOption.textContent = t("allSites");
+      }
+    }
+
+    async function fetchJson(url) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+      return response.json();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatTimestamp(value) {
+      if (!value) return "-";
+      try {
+        return new Intl.DateTimeFormat(getOpsLang() === "ja" ? "ja-JP" : "en-US", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date(value));
+      } catch {
+        return value;
+      }
+    }
+
+    function severityBadge(level) {
+      const className = level === "critical"
+        ? "ops-badge-critical"
+        : level === "high"
+          ? "ops-badge-high"
+          : "ops-badge-warning";
+      return `<span class="ops-badge ${className}">${escapeHtml(level)}</span>`;
+    }
+
+    function neutralBadge(value) {
+      return `<span class="ops-badge ops-badge-neutral">${escapeHtml(value)}</span>`;
+    }
+
+    function renderTable(headers, rows, emptyText) {
+      if (!rows.length) {
+        return `<div class="ops-empty">${escapeHtml(emptyText || t("noItems"))}</div>`;
+      }
+      return `
+        <table class="ops-table">
+          <thead>
+            <tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr>
+          </thead>
+          <tbody>
+            ${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderListBlock(title, count, items, emptyText) {
+      return `
+        <div class="ops-list-block">
+          <div class="ops-list-block-title">
+            <span>${escapeHtml(title)}</span>
+            ${neutralBadge(count)}
+          </div>
+          <div class="ops-list-items">
+            ${
+              items.length
+                ? items.map((item) => `<div class="ops-list-item">${item}</div>`).join("")
+                : `<div class="ops-empty">${escapeHtml(emptyText || t("noItems"))}</div>`
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadSites() {
+      const select = document.getElementById("site-filter");
+      const summary = await fetchJson("/api/v1/dashboard/summary");
+      for (const site of summary.site_summary || []) {
+        const option = document.createElement("option");
+        option.value = site.site_id;
+        option.textContent = `${site.site_name} (${site.site_code})`;
+        select.appendChild(option);
+      }
+      return summary;
+    }
+
+    async function loadDashboard(preloadedSummary = null) {
+      const siteId = document.getElementById("site-filter").value;
+      const params = siteId ? `?site_id=${encodeURIComponent(siteId)}` : "";
+      const summary = preloadedSummary && !siteId ? preloadedSummary : await fetchJson(`/api/v1/dashboard/summary${params}`);
+      const fixedIpAlerts = await fetchJson(`/api/v1/dashboard/fixed-ip-alerts${params}`);
+      const dhcpAlerts = await fetchJson(`/api/v1/dashboard/dhcp-alerts${params}`);
+      const recentActivity = await fetchJson(`/api/v1/dashboard/recent-activity${params}`);
+
+      document.getElementById("ops-last-refreshed").textContent = formatTimestamp(summary.generated_at);
+
+      document.getElementById("kpi-total-ips").textContent = summary.kpis.total_ips;
+      document.getElementById("kpi-allocated").textContent = summary.kpis.allocated_fixed_ips;
+      document.getElementById("kpi-candidate").textContent = summary.kpis.available_candidate_ips;
+      document.getElementById("kpi-conflict").textContent = summary.kpis.conflict_suspected_ips;
+      document.getElementById("kpi-review").textContent = summary.kpis.review_needed_requests;
+      document.getElementById("kpi-import-failed").textContent = summary.kpis.failed_import_jobs;
+
+      document.getElementById("fixed-ip-count").textContent = `${fixedIpAlerts.length}`;
+      document.getElementById("dhcp-count").textContent = `${dhcpAlerts.length}`;
+
+      document.getElementById("fixed-ip-alerts").innerHTML = renderTable(
+        [t("tableSubnet"), t("tableSite"), t("tableUsage"), t("tableLevel")],
+        fixedIpAlerts.map((item) => [
+          `<div><strong>${escapeHtml(item.name)}</strong><div class="ops-muted">${escapeHtml(item.metadata.subnet_name || "-")}</div></div>`,
+          escapeHtml(item.site_name || "-"),
+          `<div><strong>${escapeHtml(item.used_count)} / ${escapeHtml(item.capacity_total)}</strong><div class="ops-muted">${escapeHtml(item.utilization_pct)}%</div></div>`,
+          severityBadge(item.level),
+        ]),
+        t("noFixedAlerts")
+      );
+
+      document.getElementById("dhcp-alerts").innerHTML = renderTable(
+        [t("tableScope"), t("tableRange"), t("tableUsage"), t("tableLevel")],
+        dhcpAlerts.map((item) => [
+          `<div><strong>${escapeHtml(item.name)}</strong><div class="ops-muted">${escapeHtml(item.metadata.server_name || "-")}</div></div>`,
+          `${escapeHtml(item.metadata.start_ip || "-")} - ${escapeHtml(item.metadata.end_ip || "-")}`,
+          `<div><strong>${escapeHtml(item.used_count)} / ${escapeHtml(item.capacity_total)}</strong><div class="ops-muted">${escapeHtml(item.utilization_pct)}%</div></div>`,
+          severityBadge(item.level),
+        ]),
+        t("noDhcpAlerts")
+      );
+
+      const op = summary.operational_alerts;
+      document.getElementById("operational-alerts").innerHTML = `
+        <div class="ops-list">
+          ${renderListBlock(
+            t("conflictIps"),
+            op.conflict_ips.length,
+            op.conflict_ips.map((item) => `<strong>${escapeHtml(item.address)}</strong>${item.hostname ? ` | ${escapeHtml(item.hostname)}` : ""}${item.subnet_cidr ? `<div class="ops-muted">${escapeHtml(item.subnet_cidr)}</div>` : ""}`)
+          )}
+          ${renderListBlock(
+            t("reviewNeeded"),
+            op.review_needed_requests.length,
+            op.review_needed_requests.map((item) => `<strong>${escapeHtml(item.request_number)}</strong> | ${escapeHtml(item.applicant_name)}${item.subnet ? `<div class="ops-muted">${escapeHtml(item.subnet)}</div>` : ""}`)
+          )}
+          ${renderListBlock(
+            t("failedImports"),
+            op.import_jobs.length,
+            op.import_jobs.map((item) => `<strong>${escapeHtml(item.job_name)}</strong> | ${escapeHtml(item.status)}${item.error_message ? `<div class="ops-muted">${escapeHtml(item.error_message)}</div>` : ""}`)
+          )}
+          ${renderListBlock(
+            t("weakTraceability"),
+            op.weak_traceability_ips.length,
+            op.weak_traceability_ips.map((item) => `<strong>${escapeHtml(item.address)}</strong><div class="ops-muted">observations=${escapeHtml(item.observation_count)}${item.subnet_cidr ? ` | ${escapeHtml(item.subnet_cidr)}` : ""}</div>`)
+          )}
+        </div>
+      `;
+
+      document.getElementById("site-summary").innerHTML = renderTable(
+        [t("tableSite"), t("tableSubnets"), t("tableIps"), t("tableRequests"), t("tableConflicts")],
+        summary.site_summary.map((item) => [
+          `<div><strong>${escapeHtml(item.site_name)}</strong><div class="ops-muted">${escapeHtml(item.site_code)}</div></div>`,
+          escapeHtml(item.subnet_count),
+          escapeHtml(item.ip_count),
+          escapeHtml(item.request_count),
+          escapeHtml(item.conflict_count),
+        ]),
+        t("noSiteSummary")
+      );
+
+      document.getElementById("recent-activity").innerHTML = `
+        <div class="ops-list">
+          ${renderListBlock(
+            t("requests"),
+            recentActivity.recent_requests.length,
+            recentActivity.recent_requests.map((item) => `<strong>${escapeHtml(item.request_number)}</strong> | ${escapeHtml(item.applicant_name)} | ${escapeHtml(item.status)}${item.eligibility_outcome ? `<div class="ops-muted">${escapeHtml(item.eligibility_outcome)} | ${formatTimestamp(item.created_at)}</div>` : `<div class="ops-muted">${formatTimestamp(item.created_at)}</div>`}`)
+          )}
+          ${renderListBlock(
+            t("auditLogs"),
+            recentActivity.recent_audit_logs.length,
+            recentActivity.recent_audit_logs.map((item) => `<strong>${escapeHtml(item.action)}</strong> | ${escapeHtml(item.entity_type)}${item.change_summary ? `<div class="ops-muted">${escapeHtml(item.change_summary)}</div>` : ""}<div class="ops-muted">${formatTimestamp(item.created_at)}</div>`)
+          )}
+          ${renderListBlock(
+            t("importJobs"),
+            recentActivity.recent_import_jobs.length,
+            recentActivity.recent_import_jobs.map((item) => `<strong>${escapeHtml(item.job_name)}</strong> | ${escapeHtml(item.status)}<div class="ops-muted">${escapeHtml(item.source_type)} | ${formatTimestamp(item.created_at)}</div>`)
+          )}
+        </div>
+      `;
+    }
+
+    window.addEventListener("DOMContentLoaded", async function () {
+      applyOpsTranslations();
+      const summary = await loadSites();
+      await loadDashboard(summary);
+
+      document.getElementById("refresh-dashboard").addEventListener("click", function () {
+        loadDashboard();
+      });
+
+      document.getElementById("site-filter").addEventListener("change", function () {
+        loadDashboard();
+      });
+
+      window.addEventListener("storage", function (event) {
+        if (event.key === "enterprise_ipam_admin_lang") {
+          applyOpsTranslations();
+          loadDashboard();
+        }
+      });
+    });
+  </script>
+</div>
+{% endblock %}

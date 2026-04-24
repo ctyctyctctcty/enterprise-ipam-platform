@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page_title }}</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: #f4f7fb;
+      color: #0f172a;
+    }
+    .page {
+      padding: 24px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+    .muted {
+      color: #64748b;
+      font-size: 14px;
+    }
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .top-actions a, .toolbar button, .toolbar select {
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #0f172a;
+      padding: 10px 14px;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    .top-actions a.primary, .toolbar button {
+      background: #0f62fe;
+      color: white;
+      border-color: #0f62fe;
+      cursor: pointer;
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .toolbar-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(140px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #dbe3ef;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    }
+    .card h2, .section h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .kpi-value {
+      margin-top: 10px;
+      font-size: 34px;
+      font-weight: 700;
+    }
+    .sections {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+    .section {
+      background: white;
+      border: 1px solid #dbe3ef;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 8px;
+      border-top: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    th {
+      border-top: none;
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .level-warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .level-high {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .level-critical {
+      background: #fecaca;
+      color: #991b1b;
+    }
+    .empty {
+      color: #64748b;
+      font-size: 14px;
+      padding: 6px 0;
+    }
+    @media (max-width: 1200px) {
+      .cards {
+        grid-template-columns: repeat(3, minmax(160px, 1fr));
+      }
+      .sections {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 760px) {
+      .cards {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+      }
+      .header {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <h1>Operations Dashboard</h1>
+        <div class="muted">Operational summary for IP usage, alerts, imports, traceability, and recent changes.</div>
+      </div>
+      <div class="top-actions">
+        <a class="primary" href="/admin">Open Admin</a>
+        <a href="/topology">Topology</a>
+      </div>
+    </div>
+
+    <form method="get" action="/dashboard" class="toolbar">
+      <div class="toolbar-group">
+        <label for="site_id">Site Filter</label>
+        <select id="site_id" name="site_id">
+          <option value="">All Sites</option>
+          {% for site in sites %}
+          <option value="{{ site.id }}" {% if current_site_id == site.id %}selected{% endif %}>{{ site.name }} ({{ site.code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="toolbar-group">
+        <label>&nbsp;</label>
+        <button type="submit">Refresh Summary</button>
+      </div>
+    </form>
+
+    <section class="cards">
+      <div class="card"><div class="kpi-label">Total IPs</div><div class="kpi-value">{{ summary.kpis.total_ips }}</div></div>
+      <div class="card"><div class="kpi-label">Allocated Fixed IPs</div><div class="kpi-value">{{ summary.kpis.allocated_fixed_ips }}</div></div>
+      <div class="card"><div class="kpi-label">Available Candidates</div><div class="kpi-value">{{ summary.kpis.available_candidate_ips }}</div></div>
+      <div class="card"><div class="kpi-label">Conflict Suspected</div><div class="kpi-value">{{ summary.kpis.conflict_suspected_ips }}</div></div>
+      <div class="card"><div class="kpi-label">Review Needed Requests</div><div class="kpi-value">{{ summary.kpis.review_needed_requests }}</div></div>
+      <div class="card"><div class="kpi-label">Failed Import Jobs</div><div class="kpi-value">{{ summary.kpis.failed_import_jobs }}</div></div>
+    </section>
+
+    <div class="sections">
+      <div class="stack">
+        <section class="section">
+          <h2>Fixed IP Capacity Alerts</h2>
+          {% if fixed_ip_alerts %}
+          <table>
+            <thead>
+              <tr>
+                <th>Subnet</th>
+                <th>Site</th>
+                <th>Usage</th>
+                <th>Capacity Label</th>
+                <th>Level</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for alert in fixed_ip_alerts %}
+              <tr>
+                <td>{{ alert.name }}</td>
+                <td>{{ alert.site_name or "-" }}</td>
+                <td>{{ alert.used_count }} / {{ alert.capacity_total }} ({{ alert.utilization_pct }}%)</td>
+                <td>{{ alert.metadata.subnet_name or "-" }}</td>
+                <td><span class="pill level-{{ alert.level }}">{{ alert.level }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty">No subnets are above the fixed-IP capacity threshold.</div>
+          {% endif %}
+        </section>
+
+        <section class="section">
+          <h2>DHCP Scope Capacity Alerts</h2>
+          {% if dhcp_alerts %}
+          <table>
+            <thead>
+              <tr>
+                <th>Scope</th>
+                <th>Range</th>
+                <th>Site</th>
+                <th>Usage</th>
+                <th>Level</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for alert in dhcp_alerts %}
+              <tr>
+                <td>{{ alert.name }}</td>
+                <td>{{ alert.metadata.start_ip }} - {{ alert.metadata.end_ip }}</td>
+                <td>{{ alert.site_name or "-" }}</td>
+                <td>{{ alert.used_count }} / {{ alert.capacity_total }} ({{ alert.utilization_pct }}%)</td>
+                <td><span class="pill level-{{ alert.level }}">{{ alert.level }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty">No DHCP scopes are above the alert threshold.</div>
+          {% endif %}
+        </section>
+
+        <section class="section">
+          <h2>Recent Activity</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Latest Items</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Requests</td>
+                <td>
+                  {% if recent_activity.recent_requests %}
+                    {% for item in recent_activity.recent_requests %}
+                    <div>{{ item.request_number }} | {{ item.applicant_name }} | {{ item.status }}{% if item.eligibility_outcome %} | {{ item.eligibility_outcome }}{% endif %}</div>
+                    {% endfor %}
+                  {% else %}
+                    <span class="empty">No recent requests.</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td>Audit Logs</td>
+                <td>
+                  {% if recent_activity.recent_audit_logs %}
+                    {% for item in recent_activity.recent_audit_logs %}
+                    <div>{{ item.action }} | {{ item.entity_type }}{% if item.change_summary %} | {{ item.change_summary }}{% endif %}</div>
+                    {% endfor %}
+                  {% else %}
+                    <span class="empty">No recent audit entries.</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td>Import Jobs</td>
+                <td>
+                  {% if recent_activity.recent_import_jobs %}
+                    {% for item in recent_activity.recent_import_jobs %}
+                    <div>{{ item.job_name }} | {{ item.status }} | {{ item.source_type }}</div>
+                    {% endfor %}
+                  {% else %}
+                    <span class="empty">No recent import jobs.</span>
+                  {% endif %}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="section">
+          <h2>Operational Alerts</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Alert Type</th>
+                <th>Items</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Conflict Suspected IPs</td>
+                <td>
+                  {% if summary.operational_alerts.conflict_ips %}
+                    {% for item in summary.operational_alerts.conflict_ips %}
+                    <div>{{ item.address }}{% if item.hostname %} | {{ item.hostname }}{% endif %}{% if item.subnet_cidr %} | {{ item.subnet_cidr }}{% endif %}</div>
+                    {% endfor %}
+                  {% else %}
+                    <span class="empty">No conflict-suspected IPs.</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td>Requests Needing Manual Review</td>
+                <td>
+                  {% if summary.operational_alerts.review_needed_requests %}
+                    {% for item in summary.operational_alerts.review_needed_requests %}
+                    <div>{{ item.request_number }} | {{ item.applicant_name }}{% if item.subnet %} | {{ item.subnet }}{% endif %}</div>
+                    {% endfor %}
+                  {% else %}
+                    <span class="empty">No review-needed requests.</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td>Failed or Incomplete Import Jobs</td>
+                <td>
+                  {% if summary.operational_alerts.import_jobs %}
+                    {% for item in summary.operational_alerts.import_jobs %}
+                    <div>{{ item.job_name }} | {{ item.status }}{% if item.error_message %} | {{ item.error_message }}{% endif %}</div>
+                    {% endfor %}
+                  {% else %}
+                    <span class="empty">No import job alerts.</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td>Weak Ownership Traceability</td>
+                <td>
+                  {% if summary.operational_alerts.weak_traceability_ips %}
+                    {% for item in summary.operational_alerts.weak_traceability_ips %}
+                    <div>{{ item.address }} | observations={{ item.observation_count }}{% if item.subnet_cidr %} | {{ item.subnet_cidr }}{% endif %}</div>
+                    {% endfor %}
+                  {% else %}
+                    <span class="empty">No weak traceability alerts.</span>
+                  {% endif %}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="section">
+          <h2>Site Summary</h2>
+          {% if summary.site_summary %}
+          <table>
+            <thead>
+              <tr>
+                <th>Site</th>
+                <th>Subnets</th>
+                <th>IPs</th>
+                <th>Requests</th>
+                <th>Conflicts</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in summary.site_summary %}
+              <tr>
+                <td>{{ row.site_name }} ({{ row.site_code }})</td>
+                <td>{{ row.subnet_count }}</td>
+                <td>{{ row.ip_count }}</td>
+                <td>{{ row.request_count }}</td>
+                <td>{{ row.conflict_count }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty">No site summary is available yet.</div>
+          {% endif %}
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

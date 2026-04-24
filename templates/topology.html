@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page_title }}</title>
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: #f3f6fb;
+      color: #0f172a;
+    }
+    .page {
+      padding: 24px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 220px));
+      gap: 12px;
+      margin-bottom: 16px;
+      align-items: end;
+    }
+    .toolbar label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+    .toolbar select,
+    .toolbar input,
+    .toolbar button {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      font-size: 14px;
+    }
+    .toolbar button {
+      background: #0f62fe;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .content {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+    }
+    #network {
+      height: 78vh;
+      background: white;
+      border: 1px solid #dbe3ef;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+    .sidebar {
+      background: white;
+      border: 1px solid #dbe3ef;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+      padding: 16px;
+      overflow: auto;
+    }
+    .sidebar h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+    .meta {
+      display: grid;
+      gap: 8px;
+    }
+    .meta-item {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+    }
+    .muted {
+      color: #64748b;
+      font-size: 13px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #e0ecff;
+      color: #1746a2;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <h1>Network Topology Viewer</h1>
+        <div class="muted">Read-only topology graph for demo and operations. Physical mappings plus optional IP overlays.</div>
+      </div>
+      <div>
+        <a href="/admin" class="muted">Back to Admin</a>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div>
+        <label for="site-filter">Site</label>
+        <select id="site-filter">
+          <option value="">All Sites</option>
+          {% for site in sites %}
+          <option value="{{ site.id }}">{{ site.name }} ({{ site.code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="floor-filter">Floor</label>
+        <select id="floor-filter">
+          <option value="">All Floors</option>
+          {% for floor in floors %}
+          <option value="{{ floor.id }}">{{ floor.code }}{% if floor.name %} - {{ floor.name }}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="ip-overlay">IP / Subnet Overlay</label>
+        <select id="ip-overlay">
+          <option value="false">Physical Only</option>
+          <option value="true">Include IP Overlay</option>
+        </select>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button id="refresh-btn" type="button">Refresh Topology</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div id="network"></div>
+      <aside class="sidebar">
+        <h2>Node Detail</h2>
+        <div id="selection-empty" class="muted">Click a node to inspect its details.</div>
+        <div id="selection-content" style="display:none;">
+          <div class="meta">
+            <div>
+              <span class="tag" id="node-kind"></span>
+              <strong id="node-label"></strong>
+            </div>
+            <div class="muted" id="node-title"></div>
+            <div id="node-meta"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const container = document.getElementById("network");
+    const emptyState = document.getElementById("selection-empty");
+    const detailState = document.getElementById("selection-content");
+    const nodeKindEl = document.getElementById("node-kind");
+    const nodeLabelEl = document.getElementById("node-label");
+    const nodeTitleEl = document.getElementById("node-title");
+    const nodeMetaEl = document.getElementById("node-meta");
+
+    const dataset = {
+      nodes: new vis.DataSet([]),
+      edges: new vis.DataSet([])
+    };
+
+    const groupStyles = {
+      location: { color: { background: "#dbeafe", border: "#2563eb" }, shape: "box" },
+      network_device: { color: { background: "#dcfce7", border: "#16a34a" }, shape: "database" },
+      switch_port: { color: { background: "#fef3c7", border: "#d97706" }, shape: "dot", size: 18 },
+      endpoint: { color: { background: "#fde2e8", border: "#be185d" }, shape: "box" },
+      overlay: { color: { background: "#ede9fe", border: "#6d28d9" }, shape: "ellipse" },
+      overlay_ip: { color: { background: "#e0f2fe", border: "#0284c7" }, shape: "dot", size: 14 }
+    };
+
+    const network = new vis.Network(container, dataset, {
+      layout: { hierarchical: false },
+      interaction: { hover: true, navigationButtons: true },
+      physics: {
+        stabilization: false,
+        barnesHut: { gravitationalConstant: -5000, springLength: 120, springConstant: 0.03 }
+      },
+      groups: groupStyles,
+      nodes: {
+        font: { face: "Segoe UI", size: 14 },
+        borderWidth: 2,
+        margin: 12
+      },
+      edges: {
+        arrows: { to: { enabled: false } },
+        font: { align: "middle", size: 11 },
+        color: { color: "#64748b" },
+        smooth: { type: "dynamic" }
+      }
+    });
+
+    async function loadTopology() {
+      const siteId = document.getElementById("site-filter").value;
+      const floorId = document.getElementById("floor-filter").value;
+      const includeOverlay = document.getElementById("ip-overlay").value;
+      const params = new URLSearchParams();
+      if (siteId) params.set("site_id", siteId);
+      if (floorId) params.set("floor_id", floorId);
+      params.set("include_ip_overlay", includeOverlay);
+
+      const response = await fetch(`/api/v1/topology/graph?${params.toString()}`);
+      const graph = await response.json();
+
+      dataset.nodes.clear();
+      dataset.edges.clear();
+      dataset.nodes.add(graph.nodes.map((node) => ({
+        id: node.id,
+        label: node.label,
+        group: node.group,
+        title: node.title,
+        kind: node.kind,
+        metadata: node.metadata
+      })));
+      dataset.edges.add(graph.edges.map((edge) => ({
+        id: edge.id,
+        from: edge.source,
+        to: edge.target,
+        label: edge.label,
+        kind: edge.kind
+      })));
+    }
+
+    function renderNodeDetail(node) {
+      if (!node) {
+        emptyState.style.display = "block";
+        detailState.style.display = "none";
+        return;
+      }
+      emptyState.style.display = "none";
+      detailState.style.display = "block";
+      nodeKindEl.textContent = node.kind;
+      nodeLabelEl.textContent = node.label;
+      nodeTitleEl.textContent = node.title || "";
+      const meta = node.metadata || {};
+      nodeMetaEl.innerHTML = Object.entries(meta)
+        .filter(([, value]) => value !== null && value !== "")
+        .map(([key, value]) => `<div class="meta-item"><strong>${key}</strong><div class="muted">${value}</div></div>`)
+        .join("");
+    }
+
+    network.on("click", function (params) {
+      if (!params.nodes.length) {
+        renderNodeDetail(null);
+        return;
+      }
+      const node = dataset.nodes.get(params.nodes[0]);
+      renderNodeDetail(node);
+    });
+
+    document.getElementById("refresh-btn").addEventListener("click", loadTopology);
+    loadTopology();
+  </script>
+</body>
+</html>

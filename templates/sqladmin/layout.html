@@ -1,0 +1,176 @@
+{% extends "sqladmin/base.html" %}
+{% from 'sqladmin/_macros.html' import display_menu %}
+{% block body %}
+<div class="wrapper">
+  <aside class="navbar navbar-expand-lg navbar-vertical navbar-expand-md navbar-dark">
+    <div class="container-fluid">
+      <h1 class="navbar-brand navbar-brand-autodark">
+        <a href="{{ url_for('admin:index') }}">
+          {% if admin.logo_url %}
+          <img src="{{ admin.logo_url }}" width="64" height="64" alt="{{ admin.title }}" />
+          {% else %}
+          <h3 data-i18n-key="Enterprise IPAM Admin">{{ admin.title }}</h3>
+          {% endif %}
+        </a>
+      </h1>
+      <nav class="navbar navbar-expand-sm shadow-none" id="navbar-menu">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          {{ display_menu(admin._menu, request) }}
+        </div>
+      </nav>
+      <a href="/admin/" class="btn btn-primary btn-icon m-2 px-2">
+        <span class="me-2" data-i18n-key="Dashboard">Dashboard</span>
+        <i class="fa fa-chart-line"></i>
+      </a>
+      <a href="/topology" class="btn btn-info btn-icon m-2 px-2">
+        <span class="me-2" data-i18n-key="Topology">Topology</span>
+        <i class="fa fa-project-diagram"></i>
+      </a>
+      {% if admin.authentication_backend %}
+      <a href="{{ request.url_for('admin:logout') }}" class="btn btn-secondary btn-icon m-2 px-2">
+        <span class="me-2" data-i18n-key="Logout">Logout</span>
+        <i class="fa fa-sign-out"></i>
+      </a>
+      {% endif %}
+    </div>
+  </aside>
+  <div class="page-wrapper">
+    <div class="container-fluid">
+      <div class="page-header d-print-none">
+        {% block content_header %}
+        <div class="row align-items-center">
+          <div class="col">
+            <h2 class="page-title" data-i18n-dynamic="true">{{ title }}</h2>
+            <div class="page-pretitle" data-i18n-dynamic="true">{{ subtitle }}</div>
+          </div>
+          <div class="col-auto ms-auto">
+            <div class="btn-group" role="group" aria-label="Language switch">
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="lang-en">English</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="lang-ja">日本語</button>
+            </div>
+          </div>
+        </div>
+        {% endblock %}
+      </div>
+    </div>
+    <div class="page-body flex-grow-1">
+      <div class="container-fluid">
+        <div class="row row-deck row-cards">
+          {% block content %}{% endblock %}
+          {% block flash %}
+          {% include 'sqladmin/flash.html' %}
+          {% endblock %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const STORAGE_KEY = "enterprise_ipam_admin_lang";
+    const translations = {
+      en: {
+        "Enterprise IPAM Admin": "Enterprise IPAM Admin",
+        "Dashboard": "Dashboard",
+        "Topology": "Topology",
+        "Logout": "Logout",
+        "Security": "Security",
+        "Locations": "Locations",
+        "Network": "Network",
+        "Inventory": "Inventory",
+        "IPAM": "IPAM",
+        "Requests": "Requests",
+        "Operations": "Operations",
+        "Information Outlet": "Information Outlet",
+        "Information Outlet List": "Information Outlet List",
+        "Switch Port Mapping": "Switch Port Mapping",
+        "Switch Port Mapping View": "Switch Port Mapping View",
+        "IP Detail": "IP Detail",
+        "IP List": "IP List",
+        "Conflict Review": "Conflict Review",
+        "Request Detail": "Request Detail",
+        "Request List": "Request List",
+        "Import Jobs": "Import Jobs",
+        "Audit Logs": "Audit Logs",
+        "Source Records": "Source Records",
+        "IP Source Observation": "IP Source Observation",
+        "IP Source Observations": "IP Source Observations",
+        "Allocation History": "Allocation History",
+        "DNS Records": "DNS Records",
+        "DHCP Scopes": "DHCP Scopes",
+        "ARP Observations": "ARP Observations"
+      },
+      ja: {
+        "Enterprise IPAM Admin": "Enterprise IPAM Admin",
+        "Dashboard": "ダッシュボード",
+        "Topology": "トポロジー",
+        "Logout": "ログアウト",
+        "Security": "セキュリティ",
+        "Locations": "拠点",
+        "Network": "ネットワーク",
+        "Inventory": "資産",
+        "IPAM": "IP管理",
+        "Requests": "申請",
+        "Operations": "運用",
+        "Information Outlet": "情報コンセント",
+        "Information Outlet List": "情報コンセント一覧",
+        "Switch Port Mapping": "スイッチポート対応",
+        "Switch Port Mapping View": "スイッチポート対応ビュー",
+        "IP Detail": "IP詳細",
+        "IP List": "IP一覧",
+        "Conflict Review": "競合確認",
+        "Request Detail": "申請詳細",
+        "Request List": "申請一覧",
+        "Import Jobs": "取込ジョブ",
+        "Audit Logs": "監査ログ",
+        "Source Records": "ソース記録",
+        "IP Source Observation": "IPソース観測",
+        "IP Source Observations": "IPソース観測",
+        "Allocation History": "割当履歴",
+        "DNS Records": "DNSレコード",
+        "DHCP Scopes": "DHCPスコープ",
+        "ARP Observations": "ARP観測"
+      }
+    };
+
+    function applyTranslations(lang) {
+      const dict = translations[lang] || translations.en;
+      document.querySelectorAll("[data-i18n-key], [data-i18n-dynamic], .nav-link-title, .dropdown-item, .btn, .card-title, .page-title, .page-pretitle").forEach((el) => {
+        const raw = (el.dataset.i18nKey || el.dataset.originalText || el.textContent || "").trim();
+        if (!raw) return;
+        if (!el.dataset.originalText) {
+          el.dataset.originalText = raw;
+        }
+        const source = el.dataset.i18nKey || el.dataset.originalText;
+        if (dict[source]) {
+          el.textContent = dict[source];
+        } else if (el.dataset.i18nKey) {
+          el.textContent = source;
+        }
+      });
+      document.documentElement.lang = lang === "ja" ? "ja" : "en";
+      document.getElementById("lang-en")?.classList.toggle("btn-secondary", lang === "en");
+      document.getElementById("lang-en")?.classList.toggle("btn-outline-secondary", lang !== "en");
+      document.getElementById("lang-ja")?.classList.toggle("btn-secondary", lang === "ja");
+      document.getElementById("lang-ja")?.classList.toggle("btn-outline-secondary", lang !== "ja");
+      localStorage.setItem(STORAGE_KEY, lang);
+    }
+
+    const initial = localStorage.getItem(STORAGE_KEY) || "en";
+    window.addEventListener("DOMContentLoaded", function () {
+      applyTranslations(initial);
+      document.getElementById("lang-en")?.addEventListener("click", function () {
+        applyTranslations("en");
+      });
+      document.getElementById("lang-ja")?.addEventListener("click", function () {
+        applyTranslations("ja");
+      });
+    });
+  })();
+</script>
+{% endblock %}
