@@ -24,13 +24,15 @@
 - 正式生产高可用
 - 严格合规环境
 
-## 当前仓库已经为这种方式准备了什么
+## 当前仓库已经准备了什么
 
 脚本：
 
 - [scripts/windows-hyperv-init.ps1](C:\codex-workspace\enterprise-ipam\scripts\windows-hyperv-init.ps1)
 - [scripts/windows-hyperv-run.ps1](C:\codex-workspace\enterprise-ipam\scripts\windows-hyperv-run.ps1)
 - [scripts/windows-hyperv-restore-demo-db.ps1](C:\codex-workspace\enterprise-ipam\scripts\windows-hyperv-restore-demo-db.ps1)
+- [scripts/windows-scheduled-task-install.ps1](C:\codex-workspace\enterprise-ipam\scripts\windows-scheduled-task-install.ps1)
+- [scripts/windows-scheduled-task-remove.ps1](C:\codex-workspace\enterprise-ipam\scripts\windows-scheduled-task-remove.ps1)
 
 环境模板：
 
@@ -40,16 +42,9 @@
 
 - [demo/enterprise_ipam_demo_seed.db](C:\codex-workspace\enterprise-ipam\demo\enterprise_ipam_demo_seed.db)
 
-默认思路：
+## 基础部署步骤
 
-- Windows VM
-- Python 虚拟环境
-- SQLite 单机数据库
-- Uvicorn 对内网监听
-
-## 在 Hyper-V 里的操作步骤
-
-### 1. 在 VM 上安装 Python
+### 1. 安装 Python
 
 建议 Python 3.12 或 3.13。
 
@@ -64,7 +59,7 @@ python --version
 py --version
 ```
 
-### 2. 从 GitHub 拉代码
+### 2. 拉代码
 
 ```powershell
 git clone <你的仓库地址>
@@ -86,64 +81,186 @@ Set-ExecutionPolicy -Scope Process Bypass
 - 如果仓库里带了 demo seed 数据库，就直接恢复这份假数据
 - 如果没有 demo seed 数据库，才走 migration 和 seed 初始化
 
-### 4. 如果你想强制恢复 demo 假数据
-
-即使已经初始化过，也可以随时重新恢复：
-
-```powershell
-.\scripts\windows-hyperv-restore-demo-db.ps1
-```
-
-这会：
-
-- 把 [demo/enterprise_ipam_demo_seed.db](C:\codex-workspace\enterprise-ipam\demo\enterprise_ipam_demo_seed.db) 复制成运行数据库
-- 自动把 `.env` 里的 `DATABASE_URL` 改到恢复后的数据库文件
-
-### 5. 修改 `.env`
-
-最少要改：
-
-- `SECRET_KEY`
-- `DEBUG=false`
-
-默认可先保留：
-
-```env
-DATABASE_URL=sqlite:///./enterprise_ipam_server.db
-```
-
-这代表先用仓库自带的 demo 假数据数据库做试运行。
-
-### 6. 启动服务
+### 4. 手工启动方式
 
 ```powershell
 .\scripts\windows-hyperv-run.ps1 -Port 18000
 ```
 
-这个脚本会以：
+这是最简单的启动方式，但有一个明显问题：
+
+- 你一 logout，它就停
+
+因为它仍然是前台 PowerShell 进程。
+
+## 为什么 logout 以后服务会停
+
+因为你现在跑的是：
+
+- 你登录 Windows
+- 打开 PowerShell
+- 手工运行 `uvicorn`
+- 这个进程属于你的登录会话
+
+所以：
+
+- 关 PowerShell 窗口会停
+- logout 会停
+- 重启 VM 会停
+
+## 推荐的 Windows 原生解决办法
+
+如果你不想引入第三方服务包装器，推荐方式是：
+
+- **Windows 任务计划程序**
+
+优点：
+
+- Windows 原生
+- 不需要额外安装 NSSM 之类工具
+- logout 不会停
+- VM 重启后可以自动拉起
+- 对公司环境更容易解释
+
+## 方案 A：用仓库自带脚本安装计划任务
+
+推荐先用这个。
+
+### 安装计划任务
 
 ```powershell
-uvicorn app.main:app --host 0.0.0.0 --port 18000
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\windows-scheduled-task-install.ps1 -Port 18000 -StartNow
 ```
 
-的方式启动，所以同一内网里的同事可以访问。
+这个脚本会：
 
-### 7. 放行防火墙
+- 创建一个名为 `EnterpriseIPAM` 的计划任务
+- 在 Windows 启动时自动运行
+- 默认使用 `SYSTEM` 账户运行
+- 把日志写到：
+  - `logs\scheduled-task-stdout.log`
+  - `logs\scheduled-task-stderr.log`
 
-例如放行 18000：
+### 检查计划任务
+
+```powershell
+Get-ScheduledTask -TaskName EnterpriseIPAM
+```
+
+### 立即启动计划任务
+
+```powershell
+Start-ScheduledTask -TaskName EnterpriseIPAM
+```
+
+### 删除计划任务
+
+```powershell
+.\scripts\windows-scheduled-task-remove.ps1
+```
+
+## 方案 B：GUI 点点点方式创建计划任务
+
+如果你不想跑脚本，也可以用 Windows 自带界面手动建。
+
+### 第 1 步：打开任务计划程序
+
+在开始菜单搜索：
+
+- `任务计划程序`
+- 或 `Task Scheduler`
+
+### 第 2 步：创建任务
+
+不要用“创建基本任务”，直接用：
+
+- `创建任务`
+
+### 第 3 步：常规页签
+
+建议这样填：
+
+- 名称：`EnterpriseIPAM`
+- 描述：`Enterprise IPAM internal platform startup task`
+- 勾选：`使用最高权限运行`
+- 选择：`无论用户是否登录都要运行`
+
+### 第 4 步：触发器页签
+
+新增触发器：
+
+- `启动时`
+
+这样每次 VM 开机都会自动启动。
+
+### 第 5 步：操作页签
+
+新增操作：
+
+- 程序或脚本：
+  `powershell.exe`
+
+- 添加参数：
+
+```powershell
+-NoProfile -WindowStyle Hidden -Command "C:\你的项目路径\enterprise-ipam-platform\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 18000 >> C:\你的项目路径\enterprise-ipam-platform\logs\scheduled-task-stdout.log 2>> C:\你的项目路径\enterprise-ipam-platform\logs\scheduled-task-stderr.log"
+```
+
+注意：
+
+- 路径要换成你 VM 里的真实路径
+- `logs\` 目录最好先存在
+
+### 第 6 步：条件页签
+
+建议把会阻碍启动的选项关掉，尤其是：
+
+- 仅在使用交流电源时启动
+
+### 第 7 步：设置页签
+
+建议打开：
+
+- 允许按需运行任务
+- 如果任务失败，按以下频率重新启动
+- 如果任务已在运行，则不要启动新实例
+
+## 安装完后怎么检查
+
+### 1. 看计划任务状态
+
+```powershell
+Get-ScheduledTask -TaskName EnterpriseIPAM
+```
+
+### 2. 看端口监听
+
+```powershell
+netstat -ano | findstr :18000
+```
+
+### 3. 本机浏览器验证
+
+- `http://127.0.0.1:18000/admin/`
+- `http://127.0.0.1:18000/dashboard`
+
+### 4. 同事访问
+
+如果 VM 固定 IP 是 `10.10.10.25`，那同事访问：
+
+- `http://10.10.10.25:18000/admin/`
+- `http://10.10.10.25:18000/dashboard`
+
+## 防火墙还要不要配
+
+要。
+
+如果你想让同事访问，仍然需要放行端口，比如 18000：
 
 ```powershell
 New-NetFirewallRule -DisplayName "Enterprise IPAM 18000" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 18000
 ```
-
-### 8. 给同事访问地址
-
-例如 VM 的内网 IP 是 `10.10.10.25`，则同事访问：
-
-- `http://10.10.10.25:18000/admin/`
-- `http://10.10.10.25:18000/dashboard`
-- `http://10.10.10.25:18000/docs`
-- `http://10.10.10.25:18000/topology`
 
 ## Hyper-V 网络必须确认的事
 
@@ -161,35 +278,30 @@ New-NetFirewallRule -DisplayName "Enterprise IPAM 18000" -Direction Inbound -Act
 
 ## 当前这种形态的限制
 
-现在这套“直接拉下来就能跑”的形态，默认更偏 PoC：
+现在这套“直接拉下来就能跑”的形态，默认仍然更偏 PoC：
 
 - 默认数据库仍是 SQLite
-- 没有 Windows Service 自动托管
-- 没有 HTTPS
-- 没有 Entra / AD 登录
-- 没有正式反向代理
+- 还没有 HTTPS
+- 还没有 Entra / AD 登录
+- 还没有正式反向代理
 
-所以它适合先让同事看和试，不适合长期正式运行。
+但如果你只是想让同事先稳定访问，计划任务方案已经比手工打开 PowerShell 强很多。
 
 ## 之后建议升级的方向
 
 如果这台 Hyper-V 机器要继续承担更稳定的内部服务，下一步建议至少做：
 
 1. SQLite 切 PostgreSQL
-2. Uvicorn 改为 Windows Service 托管
-3. 加 IIS / Nginx / Caddy 反向代理
-4. 改成 HTTPS
-5. 接公司认证体系
-
-## 最小使用入口
-
-先给同事这几个入口就够了：
-
-- `/admin/`
-- `/dashboard`
-- `/docs`
-- `/topology`
+2. 加 IIS / Nginx / Caddy 反向代理
+3. 改成 HTTPS
+4. 接公司认证体系
 
 ## 一句话建议
 
-如果你的目标是“公司同事先连上来看和用”，这个仓库现在已经整理成可以直接在 Hyper-V Windows VM 上拉下来、恢复 demo 假数据、启动并开放内网访问的形态。 
+如果你当前目标是：
+
+- logout 不停
+- 重启后自动起来
+- 又不想上第三方服务包装器
+
+那就用 Windows 任务计划程序。这个仓库现在已经给你准备好了脚本和操作说明。 

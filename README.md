@@ -69,6 +69,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 This mode is intended for internal demo / PoC server use on a Windows Hyper-V VM.
 The repository also includes a portable demo seed database at `demo/enterprise_ipam_demo_seed.db` so a Windows Hyper-V VM can restore a ready-to-demo dataset immediately.
+For a more server-like setup on Windows without third-party service wrappers, you can use the included Task Scheduler helper script `scripts/windows-scheduled-task-install.ps1`.
 
 ### Docker Compose
 
