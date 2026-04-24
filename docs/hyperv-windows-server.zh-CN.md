@@ -26,27 +26,26 @@
 
 ## 当前仓库已经为这种方式准备了什么
 
-新增了两个脚本：
+脚本：
 
 - [scripts/windows-hyperv-init.ps1](C:\codex-workspace\enterprise-ipam\scripts\windows-hyperv-init.ps1)
 - [scripts/windows-hyperv-run.ps1](C:\codex-workspace\enterprise-ipam\scripts\windows-hyperv-run.ps1)
+- [scripts/windows-hyperv-restore-demo-db.ps1](C:\codex-workspace\enterprise-ipam\scripts\windows-hyperv-restore-demo-db.ps1)
 
-以及一个专门给 Hyper-V Windows 用的环境模板：
+环境模板：
 
 - [`.env.hyperv.example`](C:\codex-workspace\enterprise-ipam\.env.hyperv.example)
+
+可直接恢复的 demo 假数据数据库：
+
+- [demo/enterprise_ipam_demo_seed.db](C:\codex-workspace\enterprise-ipam\demo\enterprise_ipam_demo_seed.db)
 
 默认思路：
 
 - Windows VM
 - Python 虚拟环境
 - SQLite 单机数据库
-- Uvicorn 直接对内网监听
-
-这样做的优点是：
-
-- 拉下来就能跑
-- 依赖最少
-- 不要求 Docker
+- Uvicorn 对内网监听
 
 ## 在 Hyper-V 里的操作步骤
 
@@ -69,7 +68,7 @@ py --version
 
 ```powershell
 git clone <你的仓库地址>
-cd enterprise-ipam
+cd enterprise-ipam-platform
 ```
 
 ### 3. 初始化
@@ -84,23 +83,38 @@ Set-ExecutionPolicy -Scope Process Bypass
 - 创建 `.venv`
 - 安装依赖
 - 从 `.env.hyperv.example` 复制出 `.env`
-- 执行 Alembic migration
-- 执行 seed 初始化
+- 如果仓库里带了 demo seed 数据库，就直接恢复这份假数据
+- 如果没有 demo seed 数据库，才走 migration 和 seed 初始化
 
-### 4. 修改 `.env`
+### 4. 如果你想强制恢复 demo 假数据
+
+即使已经初始化过，也可以随时重新恢复：
+
+```powershell
+.\scripts\windows-hyperv-restore-demo-db.ps1
+```
+
+这会：
+
+- 把 [demo/enterprise_ipam_demo_seed.db](C:\codex-workspace\enterprise-ipam\demo\enterprise_ipam_demo_seed.db) 复制成运行数据库
+- 自动把 `.env` 里的 `DATABASE_URL` 改到恢复后的数据库文件
+
+### 5. 修改 `.env`
 
 最少要改：
 
 - `SECRET_KEY`
-- `DEBUG=false` 保持关闭
+- `DEBUG=false`
 
-如果只是内部试运行，默认 SQLite 可以先保留：
+默认可先保留：
 
 ```env
 DATABASE_URL=sqlite:///./enterprise_ipam_server.db
 ```
 
-### 5. 启动服务
+这代表先用仓库自带的 demo 假数据数据库做试运行。
+
+### 6. 启动服务
 
 ```powershell
 .\scripts\windows-hyperv-run.ps1 -Port 18000
@@ -114,27 +128,24 @@ uvicorn app.main:app --host 0.0.0.0 --port 18000
 
 的方式启动，所以同一内网里的同事可以访问。
 
-### 6. 开防火墙
+### 7. 放行防火墙
 
-如果 Windows 防火墙拦截，需要放行端口。
-
-例如 18000：
+例如放行 18000：
 
 ```powershell
 New-NetFirewallRule -DisplayName "Enterprise IPAM 18000" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 18000
 ```
 
-### 7. 给同事访问地址
+### 8. 给同事访问地址
 
-例如这台 VM 的 IP 是 `10.10.10.25`，则同事访问：
+例如 VM 的内网 IP 是 `10.10.10.25`，则同事访问：
 
 - `http://10.10.10.25:18000/admin/`
+- `http://10.10.10.25:18000/dashboard`
 - `http://10.10.10.25:18000/docs`
 - `http://10.10.10.25:18000/topology`
 
 ## Hyper-V 网络必须确认的事
-
-最容易出问题的不是应用，而是 Hyper-V 网络。
 
 你必须确认：
 
@@ -143,12 +154,12 @@ New-NetFirewallRule -DisplayName "Enterprise IPAM 18000" -Direction Inbound -Act
 - 同事所在网段能访问这台 VM
 - 宿主机和 VM 的防火墙没有拦截
 
-最推荐：
+推荐：
 
 - Hyper-V 使用 `External Virtual Switch`
 - 给 VM 分配公司内网可达地址
 
-## 当前这种 Hyper-V 形态的限制
+## 当前这种形态的限制
 
 现在这套“直接拉下来就能跑”的形态，默认更偏 PoC：
 
@@ -165,22 +176,20 @@ New-NetFirewallRule -DisplayName "Enterprise IPAM 18000" -Direction Inbound -Act
 如果这台 Hyper-V 机器要继续承担更稳定的内部服务，下一步建议至少做：
 
 1. SQLite 切 PostgreSQL
-2. Uvicorn 进程改为 Windows Service 托管
+2. Uvicorn 改为 Windows Service 托管
 3. 加 IIS / Nginx / Caddy 反向代理
 4. 改成 HTTPS
 5. 接公司认证体系
 
-## 给同事的最小使用入口
+## 最小使用入口
 
-你可以先只给他们这两个地址：
+先给同事这几个入口就够了：
 
 - `/admin/`
 - `/dashboard`
-
-如果是技术同事再给：
-
 - `/docs`
+- `/topology`
 
 ## 一句话建议
 
-如果你的目标是“公司同事先连上来看和用”，这个仓库现在已经被整理成可以直接在 Hyper-V Windows VM 上拉下来、初始化、启动并开放内网访问的形态了。 
+如果你的目标是“公司同事先连上来看和用”，这个仓库现在已经整理成可以直接在 Hyper-V Windows VM 上拉下来、恢复 demo 假数据、启动并开放内网访问的形态。 
